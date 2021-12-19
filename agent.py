@@ -1,7 +1,7 @@
 import math
 import random
 
-COEF_1 = 11
+COEF_1 = 10
 COEF_2 = 10
 
 class Agent:
