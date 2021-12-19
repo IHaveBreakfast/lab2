@@ -2,17 +2,18 @@ import numpy as np
 import random
 from agent import Agent
 
-PSY_COST_OF_POPULATION = 1
-PSY_COST_OF_BIRTH = 2
-PHY_COST_OF_MOVED = 1
-PHY_COST_OF_BIRTH = 4
-PHY_COST_OF_TICK = 1
-AMOUNT_OF_FOOD = 1
-AMOUNT_GET_FOOD = 0
-UPDATE_FOOD = 1
-MINIMAL_NEIGHBOUR = 0
-MAXIMAL_NEIGHBOUR = 5
-NEIGHBOUR_BIRTH = 3
+COEF_1_TICK = 1
+COEF_1_CREATE = 3
+COEF_2_POPULATION = 0
+COEF_2_CREATE = 3
+COEF_2_SHIFT = 2
+COEF_3 = 1
+COEF_4 = 0
+UPDATE_COEF_3 = 1
+
+NEIGHBOURS_MIN = 0
+NEIGHBOUR_MAX = 8
+NEIGHBOUR_FOR_NEXTGEN = 3
 
 
 class Place:
@@ -21,29 +22,29 @@ class Place:
         self.iy = y
         self.agents = agents
         self.seed = seed
-        self.map_ag = np.zeros((self.iy, self.ix), dtype= np.bool)
-        self.map_food = np.random.randint(0, AMOUNT_OF_FOOD, (self.iy, self.ix), dtype= np.int)
         self.agent_list = []
+        self.map = np.zeros((self.iy, self.ix), dtype= np.bool)
+        self.coeficient_3 = np.random.randint(0, COEF_3, (self.iy, self.ix), dtype= np.int)
         random.seed(self.seed)
         for a in range(0, agents):
             agent = Agent(random.randint(0, self.ix - 1), random.randint(0, self.iy - 1), self, 1, 0)
             self.agent_list.append(agent)
-            self.map_ag[agent.iy, agent.ix] = 1
+            self.map[agent.iy, agent.ix] = 1
 
     def rule(self):
         for item in self.agent_list:
-            count = item.logic(self.map_ag)
-            item.phy_hp -= PHY_COST_OF_TICK
-            if count > MAXIMAL_NEIGHBOUR or count < MINIMAL_NEIGHBOUR:
-                item.psi_hp -= PSY_COST_OF_POPULATION
-            elif count == NEIGHBOUR_BIRTH:
+            count = item.logic(self.map)
+            item.coef_1 -= COEF_1_TICK
+            if count > NEIGHBOUR_MAX or count < NEIGHBOURS_MIN:
+                item.coef_2 -= COEF_2_POPULATION
+            elif count == NEIGHBOUR_FOR_NEXTGEN:
                 item.creator = 1
-            if item.psi_hp <= 0 or item.phy_hp <= 0:
+            if item.coef_2 <= 0 or item.coef_1 <= 0:
                 item.active = 0
             if item.shift != 0:
-                item.phy_hp -= PHY_COST_OF_MOVED
+                item.coef_1 -= COEF_2_SHIFT
 
-    def point_matrix_scanning(self, x, y):
+    def scan(self, x, y):
         if x == 0:
             max_x = x + 2
             min_x = x
@@ -64,60 +65,60 @@ class Place:
             min_y = y - 1
         return min_x, max_x, min_y, max_y
 
-    def get_food(self, x, y):
-        value = self.map_food[y, x]
+    def coeficient_4(self, x, y):
+        value = self.coeficient_3[y, x]
         if value != 0 and value != 1:
-            self.map_food[y, x] -= AMOUNT_GET_FOOD
+            self.coeficient_3[y, x] -= COEF_4
             hand_over = 2
         elif value == 1:
-            self.map_food[y, x] -= 1
+            self.coeficient_3[y, x] -= 1
             hand_over = 1
         else:
             hand_over = 0
         return hand_over
 
-    def update_food(self):
-        for i in range(0, self.iy):
+    def update_coeficient_3(self):
+       for i in range(0, self.iy):
             for j in range(0, self.ix):
-                if self.map_food[i][j] == 0:
-                    self.map_food[i][j] = random.randint(0, AMOUNT_OF_FOOD)
+              if self.coeficient_3[i][j] == 0:
+                    self.coeficient_3[i][j] = random.randint(0, COEF_3)
 
     def update(self):
         for item in self.agent_list:
             if item.creator == 1:
-                min_x, max_x, min_y, max_y = self.point_matrix_scanning(item.ix, item.iy)
+                min_x, max_x, min_y, max_y = self.scan(item.ix, item.iy)
                 free_cell = False
                 for i in range(0, 9):
                     rand_x = random.randint(min_x, max_x)
                     rand_y = random.randint(min_y, max_y)
-                    if self.map_ag[rand_y][rand_x] == 0:
+                    if self.map[rand_y][rand_x] == 0:
                         free_cell = True
                         break
                 if free_cell:
                     item.creator = 0
-                    item.phy_hp -= PHY_COST_OF_BIRTH
-                    item.psi_hp -= PSY_COST_OF_BIRTH
+                    item.coef_1 -= COEF_1_CREATE
+                    item.coef_2 -= COEF_2_CREATE
                     agent = Agent(rand_x, rand_y, self, 1, 0)
-                    self.map_ag[rand_y, rand_x] = 1
+                    self.map[rand_y, rand_x] = 1
                     self.agent_list.append(agent)
             if item.shift:
                 if item.course[0] != 0:
-                    self.map_ag[item.iy, item.ix] = 0
+                    self.map[item.iy, item.ix] = 0
                     item.ix += item.course[0]
                 elif item.course[1] != 0:
-                    self.map_ag[item.iy, item.ix] = 0
+                    self.map[item.iy, item.ix] = 0
                     item.iy += item.course[1]
-                self.map_ag[item.iy, item.ix] = 1
+                self.map[item.iy, item.ix] = 1
             if item.active:
                 continue
             else:
-                self.map_ag[item.iy, item.ix] = 0
+                self.map[item.iy, item.ix] = 0
                 self.agent_list.remove(item)
-        if UPDATE_FOOD == 1:
-            self.update_food()
+        if UPDATE_COEF_3 == 1:
+            self.update_coeficient_3()
 
     def get_agents_matrix(self):
-        return self.map_ag
+        return self.map
 
-    def get_food_matrix(self):
-        return self.map_food
+    def get_coeficient_3_matrix(self):
+        return self.coeficient_3

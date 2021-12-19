@@ -1,13 +1,14 @@
 import math
 import random
 
-AGENT_PHY_HP = 10
-AGENT_PSY_HP = 10
+COEF_1 = 11
+COEF_2 = 10
 
 class Agent:
     def __init__(self, x, y, place, active, creator):
-        self.psi_hp = AGENT_PSY_HP
-        self.phy_hp = AGENT_PHY_HP
+        self.coef_1 = COEF_1
+        self.coef_2 = COEF_2
+
         self.ix = x
         self.iy = y
         self.place = place             #площадь
@@ -21,7 +22,7 @@ class Agent:
 
 
     def sum_neighbours(self, matrix):
-        x_min, x_max, y_min, y_max = self.place.point_matrix_scanning(self.ix, self.iy)
+        x_min, x_max, y_min, y_max = self.place.scan(self.ix, self.iy)
         sum = 0
         for i in range(x_min, x_max + 1):
             for j in range(y_min, y_max + 1):
@@ -35,8 +36,8 @@ class Agent:
 
     def movement(self):
         agents = self.place.agent_list
-        distance= []
-        self.psi_hp -= 1
+        distance = []
+        self.coef_2 -= 1
         for a in agents:
             distance.append(math.sqrt(math.pow(a.ix, 2) + math.pow(a.iy, 2)))
         step = distance.index(min(distance))
@@ -66,11 +67,11 @@ class Agent:
                 self.course[1] = -1
 
     ##########################################################
-    def agent_food_motion(self):
-        x_min, x_max, y_min, y_max = self.place.point_matrix_scanning(self.ix, self.iy)
+    def agent_shift(self):
+        x_min, x_max, y_min, y_max = self.place.scan(self.ix, self.iy)
         for i in range(x_min, x_max + 1):
             for j in range(y_min, y_max + 1):
-                if self.place.map_food[i][j] != 0 and self.place.map_ag[i][j] != 1:
+                if self.place.coeficient_3[i][j] != 0 and self.place.map[i][j] != 1:
                     self.coord_purpose[0] = i
                     self.coord_purpose[1] = j
                     self.agent_motion()
@@ -78,11 +79,11 @@ class Agent:
 
     def logic(self, matrix):
         cnt_agents = self.sum_neighbours(matrix)
-        if self.phy_hp < 5:
-            val = self.place.get_food(self.ix, self.iy)
-            self.phy_hp += val
-            if self.phy_hp > AGENT_PHY_HP:
-                self.phy_hp = AGENT_PHY_HP
+        if self.coef_1 < 5:
+            val = self.place.coeficient_4(self.ix, self.iy)
+            self.coef_1 += val
+            if self.coef_1 > COEF_1:
+                self.coef_1 = COEF_1
         if cnt_agents == 0 and self.purpose == 0:
             self.coord_purpose[0], self.coord_purpose[1] = self.movement()
             self.purpose = 1
@@ -92,8 +93,8 @@ class Agent:
         if cnt_agents > 0:
             self.shift = 0
             self.purpose = 0
-            if self.phy_hp < 9:
-                val = self.place.get_food(self.ix, self.iy)
+            if self.coef_1 < 9:
+                val = self.place.coeficient_4(self.ix, self.iy)
                 if val == 0:
-                    self.agent_food_motion()
+                    self.agent_shift()
         return cnt_agents
