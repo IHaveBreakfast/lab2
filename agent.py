@@ -1,13 +1,13 @@
 import math
 import random
 
-COEF_1 = 10
-COEF_2 = 10
+HP = 10
+ENERGY = 10
 
 class Agent:
     def __init__(self, x, y, place, active, creator):
-        self.coef_1 = COEF_1
-        self.coef_2 = COEF_2
+        self.hp = HP
+        self.energy = ENERGY
 
         self.ix = x
         self.iy = y
@@ -37,7 +37,7 @@ class Agent:
     def movement(self):
         agents = self.place.agent_list
         distance = []
-        self.coef_2 -= 1
+        self.energy -= 1
         for a in agents:
             distance.append(math.sqrt(math.pow(a.ix, 2) + math.pow(a.iy, 2)))
         step = distance.index(min(distance))
@@ -71,7 +71,7 @@ class Agent:
         x_min, x_max, y_min, y_max = self.place.scan(self.ix, self.iy)
         for i in range(x_min, x_max + 1):
             for j in range(y_min, y_max + 1):
-                if self.place.coeficient_3[i][j] != 0 and self.place.map[i][j] != 1:
+                if self.place.amount_energy[i][j] != 0 and self.place.map[i][j] != 1:
                     self.coord_purpose[0] = i
                     self.coord_purpose[1] = j
                     self.agent_motion()
@@ -79,11 +79,11 @@ class Agent:
 
     def logic(self, matrix):
         cnt_agents = self.sum_neighbours(matrix)
-        if self.coef_1 < 5:
-            val = self.place.coeficient_4(self.ix, self.iy)
-            self.coef_1 += val
-            if self.coef_1 > COEF_1:
-                self.coef_1 = COEF_1
+        if self.hp < 5:
+            val = self.place.amount_get_hp(self.ix, self.iy)
+            self.hp += val
+            if self.hp > HP:
+                self.hp = HP
         if cnt_agents == 0 and self.purpose == 0:
             self.coord_purpose[0], self.coord_purpose[1] = self.movement()
             self.purpose = 1
@@ -93,8 +93,8 @@ class Agent:
         if cnt_agents > 0:
             self.shift = 0
             self.purpose = 0
-            if self.coef_1 < 9:
-                val = self.place.coeficient_4(self.ix, self.iy)
+            if self.hp < 9:
+                val = self.place.amount_get_hp(self.ix, self.iy)
                 if val == 0:
                     self.agent_shift()
         return cnt_agents

@@ -2,14 +2,14 @@ import numpy as np
 import random
 from agent import Agent
 
-COEF_1_TICK = 1
-COEF_1_CREATE = 1
-COEF_2_POPULATION = 0
-COEF_2_CREATE = 2
-COEF_2_SHIFT = 2
-COEF_3 = 1
-COEF_4 = 2
-UPDATE_COEF_3 = 1
+LOST_HP_IN_TICK = 1
+LOST_BIRTH_HP = 1
+LOST_ENERGY_POPULATION = 0
+LOST_ENERGY_BIRTH = 2
+LOST_HP_OF_MOVEMENT = 2
+AMOUNT_ENERGY = 1
+AMOUNT_GET_HP = 2
+UPDATE_ADD_HP = 1
 
 NEIGHBOURS_MIN = 2
 NEIGHBOUR_MAX = 3
@@ -24,7 +24,7 @@ class Place:
         self.seed = seed
         self.agent_list = []
         self.map = np.zeros((self.iy, self.ix), dtype= np.bool)
-        self.coeficient_3 = np.random.randint(0, COEF_3, (self.iy, self.ix), dtype= np.int)
+        self.amount_energy = np.random.randint(0, AMOUNT_ENERGY, (self.iy, self.ix), dtype= np.int)
         random.seed(self.seed)
         for a in range(0, agents):
             agent = Agent(random.randint(0, self.ix - 1), random.randint(0, self.iy - 1), self, 1, 0)
@@ -34,15 +34,15 @@ class Place:
     def rule(self):
         for item in self.agent_list:
             count = item.logic(self.map)
-            item.coef_1 -= COEF_1_TICK
+            item.hp -= LOST_HP_IN_TICK
             if count > NEIGHBOUR_MAX or count < NEIGHBOURS_MIN:
-                item.coef_2 -= COEF_2_POPULATION
+                item.energy -= LOST_ENERGY_POPULATION
             elif count == NEIGHBOUR_FOR_NEXTGEN:
                 item.creator = 1
-            if item.coef_2 <= 0 or item.coef_1 <= 0:
+            if item.energy <= 0 or item.hp <= 0:
                 item.active = 0
             if item.shift != 0:
-                item.coef_1 -= COEF_2_SHIFT
+                item.hp -= LOST_HP_OF_MOVEMENT
 
     def scan(self, x, y):
         if x == 0:
@@ -65,23 +65,23 @@ class Place:
             min_y = y - 1
         return min_x, max_x, min_y, max_y
 
-    def coeficient_4(self, x, y):
-        value = self.coeficient_3[y, x]
+    def amount_get_hp(self, x, y):
+        value = self.amount_energy[y, x]
         if value != 0 and value != 1:
-            self.coeficient_3[y, x] -= COEF_4
+            self.amount_energy[y, x] -= AMOUNT_GET_HP
             hand_over = 2
         elif value == 1:
-            self.coeficient_3[y, x] -= 1
+            self.amount_energy[y, x] -= 1
             hand_over = 1
         else:
             hand_over = 0
         return hand_over
 
-    def update_coeficient_3(self):
+    def update_add_hp(self):
        for i in range(0, self.iy):
             for j in range(0, self.ix):
-              if self.coeficient_3[i][j] == 0:
-                    self.coeficient_3[i][j] = random.randint(0, COEF_3)
+              if self.amount_energy[i][j] == 0:
+                    self.amount_energy[i][j] = random.randint(0, AMOUNT_ENERGY)
 
     def update(self):
         for item in self.agent_list:
@@ -96,8 +96,8 @@ class Place:
                         break
                 if free_cell:
                     item.creator = 0
-                    item.coef_1 -= COEF_1_CREATE
-                    item.coef_2 -= COEF_2_CREATE
+                    item.hp -= LOST_BIRTH_HP
+                    item.energy -= LOST_ENERGY_BIRTH
                     agent = Agent(rand_x, rand_y, self, 1, 0)
                     self.map[rand_y, rand_x] = 1
                     self.agent_list.append(agent)
@@ -114,11 +114,11 @@ class Place:
             else:
                 self.map[item.iy, item.ix] = 0
                 self.agent_list.remove(item)
-        if UPDATE_COEF_3 == 1:
-            self.update_coeficient_3()
+        if UPDATE_ADD_HP == 1:
+            self.update_add_hp()
 
     def get_agents_matrix(self):
         return self.map
 
     def get_coeficient_3_matrix(self):
-        return self.coeficient_3
+        return self.amount_energy
